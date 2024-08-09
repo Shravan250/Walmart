@@ -31,7 +31,7 @@ export const signin = async (req, res, next) => {
   const { password: hashedPassword, ...rest } = user._doc;
 
   const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + 7);
+  expiryDate.setTime(expiryDate.getTime() + 60 * 60 * 1000); //expires in 1 hour
 
   res
     .cookie("access_token", token, { httpsOnly: true, expires: expiryDate })
