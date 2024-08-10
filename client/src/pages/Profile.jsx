@@ -1,5 +1,5 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useRef, useState, useEffect } from "react";
 import {
   getDownloadURL,
@@ -8,23 +8,28 @@ import {
   uploadBytesResumable,
 } from "firebase/storage";
 import { app } from "../firebase.js";
-// import {
-//   updateUserStart,
-//   updateUserSuccess,
-//   updateUserFailure,
-//   deleteUserStart,
-//   deleteUserSuccess,
-//   deleteUserFailure,
-//   signOut,
-// } from "../redux/user/userSlice";
+import {
+  updateUserStart,
+  updateUserSuccess,
+  updateUserFailure,
+  deleteUserStart,
+  deleteUserSuccess,
+  deleteUserFailure,
+  signOut,
+} from "../redux/user/userSlice";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const fileRef = useRef(null);
   const [image, setImage] = useState(undefined);
   const { currentUser, loading, error } = useSelector((state) => state.user);
   const [imagePercent, setImagePercent] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [formData, setFormData] = useState({});
+  const [updateSuccess, setUpdateSuccess] = useState(false);
 
   useEffect(() => {
     if (image) {
@@ -55,20 +60,59 @@ export default function Profile() {
     );
   };
 
-  const handleSubmit = async (e) => {
-    console.log(e);
+  const handleChange = async (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleChange = async (e) => {
-    console.log(e);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      dispatch(updateUserStart());
+      const res = await axios.post(
+        "/api/user/update/" + currentUser._id,
+        formData,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      if (res.data.success === false) {
+        dispatch(updateUserFailure(res.data));
+        return;
+      }
+      dispatch(updateUserSuccess(res.data));
+      setUpdateSuccess(true);
+    } catch (e) {
+      dispatch(updateUserFailure(e.message));
+    }
   };
 
   const handleSignOut = async (e) => {
-    console.log(e);
+    e.preventDefault();
+    try {
+      await axios.get("/api/auth/signout");
+      dispatch(signOut());
+      navigate("/");
+    } catch (e) {
+      console.log("could not sign out", e);
+    }
   };
 
   const handleDeleteAccount = async (e) => {
-    console.log(e);
+    try {
+      dispatch(deleteUserStart());
+      const res = await axios.delete("/api/user/delete/" + currentUser._id, {
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.data.success === false) {
+        dispatch(deleteUserFailure(res.data));
+        return;
+      }
+      dispatch(deleteUserSuccess(res.data));
+      dispatch(signOut());
+      navigate("/");
+    } catch (e) {
+      dispatch(deleteUserFailure(e.message));
+    }
   };
 
   return (
@@ -83,7 +127,7 @@ export default function Profile() {
           onChange={(e) => setImage(e.target.files[0])}
         />
         <img
-          src={formData.profilePicture || currentUser.profilePicture}
+          src={formData.profilePicture || currentUser.profilePicture || ""}
           alt="profile"
           className="h-24 w-24 self-center cursor-pointer rounded-full object-cover mt-2"
           onClick={() => fileRef.current.click()}
@@ -141,7 +185,7 @@ export default function Profile() {
       </div>
       <p className="text-red-700 mt-5">{error && "Something went wrong!"}</p>
       <p className="text-green-700 mt-5">
-        {/* {updateSuccess && "User is updated successfully!"} */}
+        {updateSuccess && "User is updated successfully!"}
       </p>
     </div>
   );
