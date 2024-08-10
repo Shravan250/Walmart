@@ -11,7 +11,7 @@ export default function Header() {
           <h1 className="font-bold">Navbar</h1>
         </Link>
         <ul className="flex gap-4">
-          <Link to={"/home"}>
+          <Link to={"/"}>
             <li>Home</li>
           </Link>
           <Link to={"/about"}>
