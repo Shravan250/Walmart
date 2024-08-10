@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import { errorhandler } from "../utils/error.js";
+import { errorHandler } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 
 export const signup = async (req, res, next) => {
@@ -19,11 +19,11 @@ export const signin = async (req, res, next) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
-    return next(errorhandler(404, "User not found"));
+    return next(errorHandler(404, "User not found"));
   }
   const isMatch = bcrypt.compareSync(password, user.password);
   if (!isMatch) {
-    return next(errorhandler(401, "Invalid credentials"));
+    return next(errorHandler(401, "Invalid credentials"));
   }
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
